@@ -1,1 +1,15 @@
+# Python (server)
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Node (client)
+node_modules/
+dist/
+.build/
+
+# OS-specific
+.DS_Store
+Thumbs.db
 

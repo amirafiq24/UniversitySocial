@@ -9,4 +9,10 @@ class Post(db.Model):
     community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=False)
 
     comments = db.relationship('Comment', backref='post', lazy=True)
-    tags = db.relationship('Tag', backref='post', lazy=True)
+    tags = db.relationship(
+        'Tag',
+        backref='post',
+        cascade="all, delete-orphan",  # ✅ this is the key
+        passive_deletes=True,
+        lazy=True
+    )

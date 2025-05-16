@@ -23,7 +23,19 @@ function App() {
   const [communityPosts, setCommunityPosts] = useState([]);
   const [newCommunityName, setNewCommunityName] = useState("");
   const [joinedCommunities, setJoinedCommunities] = useState([]);
+  const [username, setUsername] = useState("");
 
+
+  const [editingPostId, setEditingPostId] = useState(null); 
+  const [editForm, setEditForm] = useState({ title: "", content: "" });
+
+
+  const [newPost, setNewPost] = useState({
+    title: "",
+    content: "",
+    class_tag: "",
+    professor_tag: ""
+  });
 
 
 
@@ -43,8 +55,10 @@ function App() {
   // On first load, auto-login if token exists
   useEffect(() => {
     const email = getUserFromToken();
-    if (email) {
+    const storedUsername = localStorage.getItem("username");
+    if (email && storedUsername) {
       setUserEmail(email);
+      setUsername(storedUsername);
       setLoggedIn(true);
     }
   }, []);
@@ -121,8 +135,10 @@ function App() {
         // If login was successful and token returned
         if (isLogin && res.data.token) {
           localStorage.setItem("token", res.data.token); // Save token
+          localStorage.setItem("username", res.data.username);
           setUserEmail(getUserFromToken()); // Extract email
           setLoggedIn(true); // Update login state
+          setUsername(res.data.username); // backend must send this
         }
       })
       .catch((err) => {
@@ -135,8 +151,10 @@ function App() {
   // Clear token and state on logout
   const handleLogout = () => {
     localStorage.removeItem("token");
-    setLoggedIn(false);
+    localStorage.removeItem("username");
     setUserEmail("");
+    setUsername("");
+    setLoggedIn(false);
     setMessage("Logged out");
   };
 
@@ -192,6 +210,75 @@ function App() {
             </li>
           ))}
         </ul>
+
+        {selectedCommunity && (
+        <div style={{ marginTop: "2rem" }}>
+          <h3>Create Post in {selectedCommunity.name}</h3>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const token = localStorage.getItem("token");
+
+              axios.post("http://localhost:5000/posts", {
+                ...newPost,
+                community_id: selectedCommunity.id
+              }, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json"
+                }
+              })
+                .then(res => {
+                  setMessage(res.data.message);
+                  setNewPost({ title: "", content: "", class_tag: "", professor_tag: "" });
+                  // Optional: refresh posts
+                  axios.get("http://localhost:5000/posts")
+                    .then(r => {
+                      const filtered = r.data.filter(
+                        post => post.community === selectedCommunity.name
+                      );
+                      setCommunityPosts(filtered);
+                    });
+                })
+                .catch(err => {
+                  const msg = err.response?.data?.message || "Failed to create post";
+                  setMessage(msg);
+                });
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Post title"
+              value={newPost.title}
+              onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+            /><br /><br />
+
+            <textarea
+              placeholder="Post content"
+              value={newPost.content}
+              onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+            /><br /><br />
+
+            <input
+              type="text"
+              placeholder="Class tag (e.g. CMPEN 331)"
+              value={newPost.class_tag}
+              onChange={(e) => setNewPost({ ...newPost, class_tag: e.target.value })}
+            /><br /><br />
+
+            <input
+              type="text"
+              placeholder="Professor tag (e.g. Dr. Smith)"
+              value={newPost.professor_tag}
+              onChange={(e) => setNewPost({ ...newPost, professor_tag: e.target.value })}
+            /><br /><br />
+
+            <button type="submit">Post</button>
+          </form>
+        </div>
+      )}
+
           
         {selectedCommunity && (
           <div>
@@ -205,6 +292,84 @@ function App() {
                     <strong>{post.title}</strong> <br />
                     <em>by {post.author}</em>
                     <p>{post.content}</p>
+                    
+                    {/* Show edit/delete buttons if this user created the post */}
+                    
+                    {post.author === username && (
+                      <div style={{ marginTop: "0.5rem" }}>
+                        <button
+                          onClick={() => {
+                            setEditingPostId(post.id);
+                            setEditForm({ title: post.title, content: post.content });
+                          }}
+                          style={{ marginRight: "0.5rem" }}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const token = localStorage.getItem("token");
+                            axios.delete(`http://localhost:5000/posts/${post.id}`, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            })
+                              .then(res => {
+                                setMessage(res.data.message);
+                                // Remove the deleted post from UI
+                                setCommunityPosts(prev => prev.filter(p => p.id !== post.id));
+                              })
+                              .catch(err => setMessage("Failed to delete post"));
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Edit form appears below the post being edited */}
+                    {editingPostId === post.id && (
+                      <form
+                        style={{ marginTop: "1rem" }}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const token = localStorage.getItem("token");
+                          axios.put(`http://localhost:5000/posts/${post.id}`, editForm, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          })
+                            .then(res => {
+                              setMessage(res.data.message);
+                              setEditingPostId(null);
+                              // Reload posts
+                              axios.get("http://localhost:5000/posts")
+                                .then(r => {
+                                  const filtered = r.data.filter(
+                                    p => p.community === selectedCommunity.name
+                                  );
+                                  setCommunityPosts(filtered);
+                                });
+                            })
+                            .catch(err => setMessage("Failed to update post"));
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                        /><br /><br />
+                        <textarea
+                          value={editForm.content}
+                          onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+                        /><br /><br />
+                        <button type="submit">Save</button>
+                        <button
+                          type="button"
+                          style={{ marginLeft: "0.5rem" }}
+                          onClick={() => setEditingPostId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    )}
                   </li>
                 ))}
               </ul>

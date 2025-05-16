@@ -3,11 +3,13 @@ from flask_cors import CORS
 from extensions import db, bcrypt, jwt
 from models.user import User
 from models.community import Community, user_community
+from models.post import Post
+from models.tag import Tag
 from flask_jwt_extended import create_access_token
 import os
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, supports_credentials=True)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"  # Use PostgreSQL later
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
@@ -74,8 +76,10 @@ def login():
 
     return jsonify({
         "message": f"Welcome back, {user.username}!",
-        "token": access_token
+        "token": access_token,
+        "username": user.username
     }), 200
+
 
 @app.route("/seed")
 def seed_data():
@@ -179,8 +183,6 @@ def get_joined_communities():
     joined_ids = [c.id for c in user.joined_communities]
     return jsonify(joined_ids), 200
 
-from models.community import Community
-
 @app.route("/communities/<int:community_id>/join", methods=["POST"])
 @jwt_required()
 def join_community(community_id):
@@ -218,12 +220,80 @@ def leave_community(community_id):
 
     return jsonify({"message": f"Left {community.name}."}), 200
 
+@app.route("/posts", methods=["POST"])
+@jwt_required()
+def create_post():
+    data = request.get_json()
+
+    title = data.get("title")
+    content = data.get("content")
+    class_tag = data.get("class_tag")
+    professor_tag = data.get("professor_tag")
+    community_id = data.get("community_id")
+
+    if not all([title, content, community_id]):
+        return jsonify({"message": "Missing required fields"}), 400
+
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    post = Post(
+        title=title,
+        content=content,
+        user_id=user.id,
+        community_id=community_id
+    )
+
+    # Add tags
+    if class_tag:
+        post.tags.append(Tag(label=class_tag, type="class"))
+    if professor_tag:
+        post.tags.append(Tag(label=professor_tag, type="professor"))
+
+    db.session.add(post)
+    db.session.commit()
+
+    return jsonify({"message": "Post created successfully", "post_id": post.id}), 201
+
+@app.route("/posts/<int:post_id>", methods=["PUT"])
+@jwt_required()
+def edit_post(post_id):
+    data = request.get_json()
+    post = Post.query.get(post_id)
+
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    if not post or post.user_id != user.id:
+        return jsonify({"message": "Not allowed"}), 403
+
+    post.title = data.get("title", post.title)
+    post.content = data.get("content", post.content)
+    db.session.commit()
+
+    return jsonify({"message": "Post updated"}), 200
+
+@app.route("/posts/<int:post_id>", methods=["DELETE"])
+@jwt_required()
+def delete_post(post_id):
+    print("HERE")
+    post = Post.query.get(post_id)
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    if not post or post.user_id != user.id:
+        return jsonify({"message": "Not allowed"}), 403
+
+    db.session.delete(post)
+    db.session.commit()
+    return jsonify({"message": "Post deleted"}), 200
+
+
 
 from models import User, Community, Post, Comment, Tag
 
 if __name__ == "__main__":
     with app.app_context():
-        db.drop_all()
         db.create_all()
     # Start the Flask development server
     app.run(debug=True)

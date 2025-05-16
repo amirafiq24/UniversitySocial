@@ -24,6 +24,8 @@ function App() {
   const [newCommunityName, setNewCommunityName] = useState("");
   const [joinedCommunities, setJoinedCommunities] = useState([]);
   const [username, setUsername] = useState("");
+  const [tagQuery, setTagQuery] = useState(""); // new state for the input
+
 
 
   const [editingPostId, setEditingPostId] = useState(null); 
@@ -211,12 +213,11 @@ function App() {
           ))}
         </ul>
 
-        {selectedCommunity && (
-        <div style={{ marginTop: "2rem" }}>
-          <h3>Create Post in {selectedCommunity.name}</h3>
+        {selectedCommunity && joinedCommunities.includes(selectedCommunity.id) && (
+          <div style={{ marginTop: "2rem" }}>
+            <h3>Create Post in {selectedCommunity.name}</h3>
 
-          <form
-            onSubmit={(e) => {
+            <form onSubmit={(e) => {
               e.preventDefault();
               const token = localStorage.getItem("token");
 
@@ -232,7 +233,7 @@ function App() {
                 .then(res => {
                   setMessage(res.data.message);
                   setNewPost({ title: "", content: "", class_tag: "", professor_tag: "" });
-                  // Optional: refresh posts
+
                   axios.get("http://localhost:5000/posts")
                     .then(r => {
                       const filtered = r.data.filter(
@@ -245,43 +246,81 @@ function App() {
                   const msg = err.response?.data?.message || "Failed to create post";
                   setMessage(msg);
                 });
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Post title"
-              value={newPost.title}
-              onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-            /><br /><br />
+            }}>
+              <input
+                type="text"
+                placeholder="Post title"
+                value={newPost.title}
+                onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
+              /><br /><br />
 
-            <textarea
-              placeholder="Post content"
-              value={newPost.content}
-              onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-            /><br /><br />
+              <textarea
+                placeholder="Post content"
+                value={newPost.content}
+                onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
+              /><br /><br />
 
-            <input
-              type="text"
-              placeholder="Class tag (e.g. CMPEN 331)"
-              value={newPost.class_tag}
-              onChange={(e) => setNewPost({ ...newPost, class_tag: e.target.value })}
-            /><br /><br />
+              <input
+                type="text"
+                placeholder="Class tag (e.g. CMPEN 331)"
+                value={newPost.class_tag}
+                onChange={(e) => setNewPost({ ...newPost, class_tag: e.target.value })}
+              /><br /><br />
 
-            <input
-              type="text"
-              placeholder="Professor tag (e.g. Dr. Smith)"
-              value={newPost.professor_tag}
-              onChange={(e) => setNewPost({ ...newPost, professor_tag: e.target.value })}
-            /><br /><br />
+              <input
+                type="text"
+                placeholder="Professor tag (e.g. Dr. Smith)"
+                value={newPost.professor_tag}
+                onChange={(e) => setNewPost({ ...newPost, professor_tag: e.target.value })}
+              /><br /><br />
 
-            <button type="submit">Post</button>
-          </form>
-        </div>
-      )}
+              <button type="submit">Post</button>
+            </form>
+          </div>
+        )}
+
 
           
         {selectedCommunity && (
           <div>
+            <select onChange={(e) => {
+              const order = e.target.value;
+              const sorted = [...communityPosts];
+
+              if (order === "time") {
+                sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              } else if (order === "votes") {
+                sorted.sort((a, b) => b.votes - a.votes);
+              }
+
+              setCommunityPosts(sorted);
+            }}>
+              <option value="time">Newest First</option>
+              <option value="votes">Most Voted</option>
+            </select>
+
+            {/* Tag filter input */}
+            <input
+              type="text"
+              placeholder="Filter by tag (e.g. CMPEN 331)"
+              value={tagQuery}
+              onChange={(e) => setTagQuery(e.target.value)}
+              style={{ marginTop: "1rem", padding: "0.5rem", marginRight: "0.5rem" }}
+            />
+
+            {/* Filter button */}
+            <button
+              onClick={() => {
+                const query = tagQuery.toLowerCase();
+                const filtered = posts.filter(post =>
+                  post.tags?.some(tag => tag.label.toLowerCase().includes(query))
+                );
+                setCommunityPosts(filtered);
+              }}
+            >
+              Filter
+            </button>
+
             <h3>Posts in {selectedCommunity.name}</h3>
             {communityPosts.length === 0 ? (
               <p>No posts in this community.</p>
@@ -292,7 +331,26 @@ function App() {
                     <strong>{post.title}</strong> <br />
                     <em>by {post.author}</em>
                     <p>{post.content}</p>
-                    
+
+                    <div style={{ fontSize: "0.9rem", color: "#555" }}>
+                      <span>by <strong>{post.author}</strong></span> ·{" "}
+                      <span>{post.created_at}</span>
+                    </div>
+
+                    <div style={{ marginTop: "0.5rem" }}>
+                      {post.tags?.map((tag, i) => (
+                        <span key={i} style={{
+                          padding: "0.2rem 0.5rem",
+                          backgroundColor: tag.type === "class" ? "#e0f0ff" : "#ffe0e0",
+                          borderRadius: "6px",
+                          marginRight: "0.5rem",
+                          fontSize: "0.8rem"
+                        }}>
+                          {tag.label}
+                        </span>
+                      ))}
+                    </div>
+
                     {/* Show edit/delete buttons if this user created the post */}
                     
                     {post.author === username && (

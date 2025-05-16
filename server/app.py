@@ -6,6 +6,7 @@ from models.community import Community, user_community
 from models.post import Post
 from models.tag import Tag
 from flask_jwt_extended import create_access_token
+from datetime import datetime
 import os
 
 app = Flask(__name__)
@@ -139,7 +140,10 @@ def get_posts():
             "title": post.title,
             "content": post.content,
             "author": post.author.username,        # thanks to backref
-            "community": post.community.name       # thanks to backref
+            "community": post.community.name,       # thanks to backref
+            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M:%S"),  # if using datetime
+            "tags": [{"label": tag.label, "type": tag.type} for tag in post.tags],
+            "votes": post.votes,  # optional if you're implementing voting
         })
 
     return jsonify(post_list)
@@ -294,6 +298,7 @@ from models import User, Community, Post, Comment, Tag
 
 if __name__ == "__main__":
     with app.app_context():
+        #db.drop_all()
         db.create_all()
     # Start the Flask development server
     app.run(debug=True)

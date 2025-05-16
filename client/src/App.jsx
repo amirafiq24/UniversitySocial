@@ -25,6 +25,10 @@ function App() {
   const [joinedCommunities, setJoinedCommunities] = useState([]);
   const [username, setUsername] = useState("");
   const [tagQuery, setTagQuery] = useState(""); // new state for the input
+  const [selectedPost, setSelectedPost] = useState(null); // the post being viewed
+  const [postComments, setPostComments] = useState([]);   // all comments for selected post
+  const [newComment, setNewComment] = useState("");        // input for new comment
+
 
 
 
@@ -158,6 +162,12 @@ function App() {
     setUsername("");
     setLoggedIn(false);
     setMessage("Logged out");
+  };
+
+  const fetchComments = (postId) => {
+    axios.get(`http://localhost:5000/posts/${postId}/comments`)
+      .then(res => setPostComments(res.data))
+      .catch(err => console.error("Failed to load comments", err));
   };
 
   // UI shown when user is logged in
@@ -332,6 +342,13 @@ function App() {
                     <em>by {post.author}</em>
                     <p>{post.content}</p>
 
+                    <button onClick={() => {
+                      setSelectedPost(post); // Set the selected post
+                      fetchComments(post.id); // Load its comments
+                    }}>
+                      View Post
+                    </button>
+
                     <div style={{ fontSize: "0.9rem", color: "#555" }}>
                       <span>by <strong>{post.author}</strong></span> ·{" "}
                       <span>{post.created_at}</span>
@@ -476,6 +493,137 @@ function App() {
             Join Community
           </button>
         )
+      )}
+
+      {selectedPost && (
+        <div style={{ marginTop: "2rem", padding: "1rem", border: "1px solid #ccc" }}>
+          <h2>{selectedPost.title}</h2>
+          <p>{selectedPost.content}</p>
+          <p style={{ fontStyle: "italic" }}>by {selectedPost.author}</p>
+
+          <hr />
+
+          {/* Comment form */}
+          <h4>Leave a comment</h4>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const token = localStorage.getItem("token");
+
+            axios.post(`http://localhost:5000/posts/${selectedPost.id}/comments`, {
+              text: newComment
+            }, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+              }
+            }).then(() => {
+              setNewComment("");          // Clear input
+              fetchComments(selectedPost.id); // Refresh comments
+            }).catch(err => {
+              console.error("Failed to comment", err);
+            });
+          }}>
+            <textarea
+              placeholder="Write your comment here..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              style={{ width: "100%", height: "80px" }}
+            />
+            <br />
+            <button type="submit" style={{ marginTop: "0.5rem" }}>Post Comment</button>
+          </form>
+
+          <hr />
+
+          {/* Comment thread */}
+          <h4>Comments</h4>
+          {postComments.length === 0 ? (
+            <p>No comments yet.</p>
+          ) : (
+            <ul>
+            {postComments.map((comment) => (
+              <li key={comment.id} style={{ marginBottom: "1.5rem" }}>
+                <strong>{comment.author}</strong> at {comment.created_at}
+                <p>{comment.text}</p>
+
+                {comment.author === username && (
+                  <button
+                    onClick={() => {
+                      const token = localStorage.getItem("token");
+                      axios.delete(`http://localhost:5000/comments/${comment.id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      })
+                      .then(() => fetchComments(selectedPost.id))
+                      .catch(() => setMessage("Failed to delete comment"));
+                    }}
+                    style={{ color: "red", fontSize: "0.8rem" }}
+                  >
+                    Delete
+                  </button>
+                )}
+
+                {/* Reply form for this comment */}
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const token = localStorage.getItem("token");
+                  const replyText = e.target.elements.reply.value;
+
+                  axios.post(`http://localhost:5000/posts/${selectedPost.id}/comments`, {
+                    text: replyText,
+                    parent_id: comment.id  // reply to this comment
+                  }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  }).then(() => {
+                    fetchComments(selectedPost.id); // reload comments
+                    e.target.reset();               // clear reply input
+                  }).catch(() => setMessage("Failed to reply"));
+                }}>
+                  <input
+                    type="text"
+                    name="reply"
+                    placeholder="Reply..."
+                    style={{ width: "80%" }}
+                  />
+                  <button type="submit">Reply</button>
+                </form>
+
+                {/* Render one-level replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                  <ul style={{ marginTop: "0.5rem", paddingLeft: "1rem", borderLeft: "2px solid #ccc" }}>
+                    {comment.replies.map(reply => (
+                      <li key={reply.id} style={{ marginBottom: "0.5rem" }}>
+                        <strong>{reply.author}</strong> at {reply.created_at}
+                        <p>{reply.text}</p>
+
+                        {reply.author === username && (
+                          <button
+                            onClick={() => {
+                              const token = localStorage.getItem("token");
+                              axios.delete(`http://localhost:5000/comments/${reply.id}`, {
+                                headers: { Authorization: `Bearer ${token}` }
+                              })
+                              .then(() => fetchComments(selectedPost.id))
+                              .catch(() => setMessage("Failed to delete reply"));
+                            }}
+                            style={{ color: "red", fontSize: "0.8rem" }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          )}
+
+          <button onClick={() => setSelectedPost(null)} style={{ marginTop: "1rem" }}>
+            Back to Community
+          </button>
+        </div>
       )}
 
 

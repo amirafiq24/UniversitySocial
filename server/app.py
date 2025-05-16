@@ -292,7 +292,67 @@ def delete_post(post_id):
     db.session.commit()
     return jsonify({"message": "Post deleted"}), 200
 
+@app.route("/posts/<int:post_id>/comments", methods=["POST"])
+@jwt_required()
+def create_comment(post_id):
+    data = request.get_json()
+    text = data.get("text")
+    parent_id = data.get("parent_id")
 
+    if not text:
+        return jsonify({"message": "Comment text required"}), 400
+
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    comment = Comment(text=text, post_id=post_id, user_id=user.id, parent_id=parent_id)
+    db.session.add(comment)
+    db.session.commit()
+
+    return jsonify({"message": "Comment added!"}), 201
+
+@app.route("/posts/<int:post_id>/comments", methods=["GET"])
+def get_comments(post_id):
+    comments = Comment.query.filter_by(post_id=post_id).all()
+
+    def serialize(comment):
+        return {
+            "id": comment.id,
+            "text": comment.text,
+            "author": comment.commenter.username,
+            "created_at": comment.created_at.strftime("%Y-%m-%d %H:%M"),
+            "parent_id": comment.parent_id,
+            "replies": [
+                {
+                    "id": reply.id,
+                    "text": reply.text,
+                    "author": reply.commenter.username,
+                    "created_at": reply.created_at.strftime("%Y-%m-%d %H:%M"),
+                    "parent_id": reply.parent_id
+                }
+                for reply in comment.replies
+            ] if comment.parent_id is None else []  # only nest replies one level
+        }
+
+    top_level = [c for c in comments if c.parent_id is None]
+    return jsonify([serialize(c) for c in top_level])
+
+
+@app.route("/comments/<int:comment_id>", methods=["DELETE"])
+@jwt_required()
+def delete_comment(comment_id):
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+    comment = Comment.query.get(comment_id)
+
+    if not comment:
+        return jsonify({"message": "Comment not found"}), 404
+    if comment.user_id != user.id:
+        return jsonify({"message": "Unauthorized"}), 403
+
+    db.session.delete(comment)
+    db.session.commit()
+    return jsonify({"message": "Comment deleted"}), 200
 
 from models import User, Community, Post, Comment, Tag
 

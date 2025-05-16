@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from extensions import db
+from models.assoc import user_community 
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,3 +10,6 @@ class User(db.Model):
 
     posts = db.relationship('Post', backref='author', lazy=True)
     comments = db.relationship('Comment', backref='commenter', lazy=True)
+
+    # All communities the user has joined
+    joined_communities = db.relationship('Community', secondary=user_community, back_populates="members")

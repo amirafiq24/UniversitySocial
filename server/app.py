@@ -2,11 +2,12 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from extensions import db, bcrypt, jwt
 from models.user import User
+from models.community import Community, user_community
 from flask_jwt_extended import create_access_token
 import os
 
 app = Flask(__name__)
-CORS(app)           # For hashing passwords
+CORS(app) 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"  # Use PostgreSQL later
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
@@ -139,11 +140,90 @@ def get_posts():
 
     return jsonify(post_list)
 
+@app.route("/communities", methods=["POST"])
+def create_community():
+    from models.community import Community
+
+    data = request.get_json()
+    name = data.get("name")
+
+    if Community.query.filter_by(name=name).first():
+        return jsonify({"message": "Community already exist"}), 400
+
+    new_community = Community(name=name)
+    db.session.add(new_community)
+    db.session.commit()
+
+    return jsonify({"message": f"Community '{name}' created."}), 201
+
+@app.route("/communities", methods=["GET"])
+def list_communities():
+    from models.community import Community
+    communities = Community.query.all()
+    result = [{"id": c.id, "name": c.name} for c in communities]
+    return jsonify(result)
+
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+@app.route("/me/communities", methods=["GET"])
+@jwt_required()
+def get_joined_communities():
+    user_email = get_jwt_identity()
+    if not user_email:
+        return jsonify({"message": "Invalid token"}), 401
+
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    joined_ids = [c.id for c in user.joined_communities]
+    return jsonify(joined_ids), 200
+
+from models.community import Community
+
+@app.route("/communities/<int:community_id>/join", methods=["POST"])
+@jwt_required()
+def join_community(community_id):
+    user_email = get_jwt_identity()
+    print("Decoded JWT identity:", user_email)
+    user = User.query.filter_by(email=user_email).first()
+    community = Community.query.get(community_id)
+
+    if not community:
+        return jsonify({"message": "Community not found"}), 404
+
+    if community in user.joined_communities:
+        return jsonify({"message": "Already joined"}), 200
+
+    user.joined_communities.append(community)
+    db.session.commit()
+
+    return jsonify({"message": f"Joined {community.name}!"}), 200
+
+@app.route("/communities/<int:community_id>/leave", methods=["POST"])
+@jwt_required()
+def leave_community(community_id):
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+    community = Community.query.get(community_id)
+
+    if not community:
+        return jsonify({"message": "Community not found"}), 404
+
+    if community not in user.joined_communities:
+        return jsonify({"message": "Not a member"}), 400
+
+    user.joined_communities.remove(community)
+    db.session.commit()
+
+    return jsonify({"message": f"Left {community.name}."}), 200
+
 
 from models import User, Community, Post, Comment, Tag
 
 if __name__ == "__main__":
-    # Create all tables before starting the server
-
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
     # Start the Flask development server
     app.run(debug=True)

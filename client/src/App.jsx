@@ -18,6 +18,14 @@ function App() {
   const [userEmail, setUserEmail] = useState("");
 
   const [posts, setPosts] = useState([]);
+  const [communities, setCommunities] = useState([]);
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [newCommunityName, setNewCommunityName] = useState("");
+  const [joinedCommunities, setJoinedCommunities] = useState([]);
+
+
+
 
   // Decode token to extract user identity (email)
   const getUserFromToken = () => {
@@ -53,6 +61,36 @@ function App() {
     }
   }, [loggedIn]); // This runs only when `loggedIn` becomes true
 
+  useEffect(() => {
+    if (loggedIn) {
+      axios.get("http://localhost:5000/communities")
+        .then(res => setCommunities(res.data))
+        .catch(err => console.error("Failed to load communities", err));
+    }
+  }, [loggedIn]);
+
+  useEffect(() => {
+    if (selectedCommunity) {
+      axios.get("http://localhost:5000/posts")
+        .then(res => {
+          const filtered = res.data.filter(
+            post => post.community === selectedCommunity.name
+          );
+          setCommunityPosts(filtered);
+        });
+    }
+  }, [selectedCommunity]);
+
+  useEffect(() => {
+    if (loggedIn) {
+      const token = localStorage.getItem("token");
+      axios.get("http://localhost:5000/me/communities", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => setJoinedCommunities(res.data))
+      .catch(err => console.error("Failed to fetch joined communities", err));
+    }
+  }, [loggedIn]);
 
   // Update form state when the user types in any input field
   const handleChange = (e) => {
@@ -111,16 +149,113 @@ function App() {
         <button onClick={handleLogout}>Logout</button>
         <p>{message}</p>
 
-        <h2>Posts</h2>
-          <ul>
-            {posts.map((post) => (
-              <li key={post.id} style={{ marginBottom: "1rem" }}>
-                <strong>{post.title}</strong> <br />
-                <em>by {post.author} in {post.community}</em> <br />
-                <p>{post.content}</p>
-              </li>
-            ))}
-          </ul>
+        <h2>Communities</h2>
+        <h4>Create a New Community</h4>
+        <form onSubmit={(e) => {
+          e.preventDefault(); // prevent full-page reload
+          if (!newCommunityName.trim()) {
+            setMessage("Community name cannot be empty");
+            return;
+          }
+
+          axios.post("http://localhost:5000/communities", {
+            name: newCommunityName
+          })
+            .then(res => {
+              setMessage(res.data.message);
+              setNewCommunityName(""); // reset input
+              return axios.get("http://localhost:5000/communities"); // refresh list
+            })
+            .then(res => setCommunities(res.data))
+            .catch(err => {
+              const msg = err.response?.data?.message || "Failed to create community";
+              setMessage(msg);
+            });
+        }}>
+          <input
+            type="text"
+            placeholder="e.g. Electrical Engineering"
+            value={newCommunityName}
+            onChange={(e) => setNewCommunityName(e.target.value)}
+          />
+          <button type="submit" style={{ marginLeft: "0.5rem" }}>
+            Create
+          </button>
+        </form>
+
+        <ul>
+          {communities.map((c) => (
+            <li key={c.id}>
+              <button onClick={() => setSelectedCommunity(c)}>
+                {c.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+          
+        {selectedCommunity && (
+          <div>
+            <h3>Posts in {selectedCommunity.name}</h3>
+            {communityPosts.length === 0 ? (
+              <p>No posts in this community.</p>
+            ) : (
+              <ul>
+                {communityPosts.map((post) => (
+                  <li key={post.id} style={{ marginBottom: "1rem" }}>
+                    <strong>{post.title}</strong> <br />
+                    <em>by {post.author}</em>
+                    <p>{post.content}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {selectedCommunity && (
+        joinedCommunities.includes(selectedCommunity.id) ? (
+          <button
+            onClick={() => {
+              const token = localStorage.getItem("token");
+              axios.post(
+                `http://localhost:5000/communities/${selectedCommunity.id}/leave`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+              )
+                .then(res => {
+                  setMessage(res.data.message);
+                  setJoinedCommunities(prev =>
+                    prev.filter(id => id !== selectedCommunity.id)
+                  );
+                })
+                .catch(err => setMessage("Failed to leave community"));
+            }}
+          >
+            Leave Community
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              const token = localStorage.getItem("token");
+              console.log("Token:", token);
+              axios.post(
+                `http://localhost:5000/communities/${selectedCommunity.id}/join`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+              )
+                .then(res => {
+                  setMessage(res.data.message);
+                  setJoinedCommunities(prev => [...prev, selectedCommunity.id]);
+                })
+                .catch(err => setMessage("Failed to join"));
+            }}
+          >
+            Join Community
+          </button>
+        )
+      )}
+
+
 
       </div>
     );

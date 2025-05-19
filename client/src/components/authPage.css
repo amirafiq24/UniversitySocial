@@ -1,6 +1,82 @@
-body {
-  background-color: #121212;
-  color: white;
-  margin: 0;
-  font-family: sans-serif;
+.body {
+    background-color: #B0DB9C;
+    color: rgb(54, 123, 140);
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;                /* full screen height */
+    width: 100vw;
+    display: flex;                    /* enable flexbox */
+    align-items: center;             /* center vertically */
+    display: flex;
 }
+
+.auth-box { 
+    background-color: #DDF6D2;
+    padding: 2rem;
+    color: white;
+    width: 50%;
+    max-width: 580px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    flex: 1;
+    animation: fadeIn 0.8s ease-in-out;
+    border-radius: 20px;
+}
+
+.auth-box h1 {
+    white-space: nowrap;
+    margin-bottom: 1rem;
+    color: #2e3d2f; 
+}
+
+.auth-box h2 {
+    white-space: nowrap;
+    margin-bottom: 1rem;
+    color: #2e3d2f;  
+}
+
+.auth-box button {
+    background-color: #134e15;
+}
+
+.auth-illustration {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+.auth-illustration img {
+    max-width: 90%;
+    height: 100vh;
+    object-fit: cover;
+    filter: brightness(0.65);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;                 /* makes them expand fully */
+  max-width: 400px;            /* don't go too wide on large screens */
+  padding: 0.6rem 1rem;        /* inner spacing */
+  border: 1px solid #ccc;      /* soft border */
+  border-radius: 6px;          /* rounded edges */
+  font-size: 1rem;             /* readable text */
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1); /* subtle shadow */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background-color: #ebf0ea;
+  margin-bottom: 0.1rem;
+}
+
+input:focus {
+  border-color: #4CAF50;  /* green border on focus */
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  outline: none;          /* remove default blue border */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+

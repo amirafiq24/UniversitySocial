@@ -89,7 +89,7 @@ function UniHubPage({ userEmail, username, onLogout }) {
 
   return (
       <div style={{ padding: "2rem" }}>
-        <h1>Welcome to UniHub!</h1>
+        <h1>Welcome to UniSocial!</h1>
         <p>You are logged in as: <strong>{userEmail}</strong></p>
         <button onClick={handleLogout}>Logout</button>     
 

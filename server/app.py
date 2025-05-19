@@ -37,6 +37,15 @@ def register():
     email = data.get("email")
     password = data.get("password")
 
+    if not username or not email or not password:
+        return jsonify({"message": "All fields are required"}), 400
+
+    if "@" not in email:
+        return jsonify({"message": "Invalid email format"}), 400
+
+    if len(password) < 6:
+        return jsonify({"message": "Password must be at least 6 characters"}), 400
+
     # Check if the email is already in the database
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
@@ -52,7 +61,13 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": f"User {username} registered successfully!"}), 201
+    access_token = create_access_token(identity=email)
+
+    return jsonify({
+        "message": f"User {username} registered successfully!",
+        "token": access_token,
+        "username": username
+    }), 201
 
 
 @app.route("/login", methods=["POST"])
@@ -155,6 +170,12 @@ def create_community():
     data = request.get_json()
     name = data.get("name")
 
+    if not name or name.strip() == "":
+        return jsonify({"message": "Community name cannot be empty"}), 400
+
+    if len(name) > 50:
+        return jsonify({"message": "Community name too long"}), 400
+
     if Community.query.filter_by(name=name).first():
         return jsonify({"message": "Community already exist"}), 400
 
@@ -177,11 +198,14 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 @jwt_required()
 def get_joined_communities():
     user_email = get_jwt_identity()
+    print("JWT Identity (user email):", user_email)
+
     if not user_email:
         return jsonify({"message": "Invalid token"}), 401
 
     user = User.query.filter_by(email=user_email).first()
     if not user:
+        print("No user found with email from token")
         return jsonify({"message": "User not found"}), 404
 
     joined_ids = [c.id for c in user.joined_communities]
@@ -299,7 +323,7 @@ def create_comment(post_id):
     text = data.get("text")
     parent_id = data.get("parent_id")
 
-    if not text:
+    if not text or text.strip() == "":
         return jsonify({"message": "Comment text required"}), 400
 
     user_email = get_jwt_identity()

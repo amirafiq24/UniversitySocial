@@ -1,25 +1,40 @@
 import { useState, useEffect } from "react";
 import AuthPage from "./components/authPage";
 import UniHubPage from "./components/uniHubPage";
+import axios from "axios";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const email = token ? JSON.parse(atob(token.split(".")[1])).sub : null;
-    const storedUsername = localStorage.getItem("username");
-
-    if (token && email && storedUsername) {
-      setUserEmail(email);
-      setUsername(storedUsername);
-      setLoggedIn(true);
+    if (!token) {
+      setLoading(false);
+      return;
     }
+
+    axios.get("http://localhost:5000/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        setUserEmail(res.data.email);
+        setUsername(res.data.username);
+        setLoggedIn(true);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("username");
+        setLoggedIn(false);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleLogin = (email, uname) => {
+  const handleLogin = (token, uname, email) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("username", uname);
     setUserEmail(email);
     setUsername(uname);
     setLoggedIn(true);
@@ -32,6 +47,8 @@ function App() {
     setUserEmail("");
     setUsername("");
   };
+
+  if (loading) return <p>Loading...</p>;
 
   return loggedIn ? (
     <UniHubPage userEmail={userEmail} username={username} onLogout={handleLogout} />

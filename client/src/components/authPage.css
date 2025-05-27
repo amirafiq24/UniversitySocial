@@ -10,16 +10,44 @@
     display: flex;
 }
 
+.auth-left {
+    justify-content: center;
+}
+
+.auth-header {
+    background-color: #0f3e18;
+    color: #bcddbc;
+    padding: none;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 700px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 40px;
+    padding: 1px;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+.auth-logo {
+    margin-left: 2px;
+    width: 80px;
+    margin-right: 1rem;
+}
+
 .auth-box { 
     background-color: #DDF6D2;
-    padding: 2rem;
+    padding-left: 2rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
     color: white;
-    width: 50%;
-    max-width: 580px;
+    width: 580px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     flex: 1;
     animation: fadeIn 0.8s ease-in-out;
     border-radius: 20px;
+    margin-left: 75px;
 }
 
 .auth-box h1 {
@@ -66,6 +94,7 @@ input[type="password"] {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   background-color: #ebf0ea;
   margin-bottom: 0.1rem;
+  color: #2e3d2f;
 }
 
 input:focus {

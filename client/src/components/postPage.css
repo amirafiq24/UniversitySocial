@@ -1,0 +1,44 @@
+.body {
+    background-color: #B0DB9C;
+    color: rgb(54, 123, 140);
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;                /* full screen height */
+    width: 100vw;
+    display: flex;                    /* enable flexbox */
+    align-items: center;             /* center vertically */
+    justify-content: center;
+    display: flex;
+}
+
+.post-box { 
+    background-color: #DDF6D2;
+    background: linear-gradient(to bottom, #ddf6d2, #b0db9c);
+    padding: 2rem;
+    color: #2e3d2f;
+    width: 50%;
+    max-width: 800px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    flex: 1;
+    animation: fadeIn 0.8s ease-in-out;
+    border-radius: 20px;
+    margin: 10px;
+}
+
+.post-header h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.author {
+  color: #4f634f;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.comment-box {
+  background-color: #f9fef9;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+}

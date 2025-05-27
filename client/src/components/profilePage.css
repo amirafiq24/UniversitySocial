@@ -1,0 +1,130 @@
+.profile-main{
+    background-color: #B0DB9C   ;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.profile-body {
+    justify-content: center;
+    background-color: #DDF6D2;
+    border-radius: 10px;
+    width: 1300px;
+    padding: 10px;
+    margin: 20px;
+    color: #2e3d2f;
+}
+
+.profile-body-info {
+    color: #2e3d2f;
+    margin-left: 1rem;
+    margin-bottom: 1px;
+}
+
+.profile-body-info p {
+  margin: 0;
+}
+
+.profile-header {
+    background-color: #0f3e18;
+    color: #bcddbc;
+    padding: none;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-header button {
+    width: auto;
+    height: 40px;
+    margin-left: 1rem;
+}
+
+.profile-logo {
+    margin: 0;
+    margin-right: 1rem;
+    width: 100px;
+}
+
+.profile-greeting {
+    font-size: 4rem;    
+    line-height: 1;  
+    padding: 0;
+}
+
+.profile-back-btn {
+    margin-left: 1rem;
+}
+
+.profile-middle {
+    display: flex;
+}
+
+.profile-left {
+    color: #2e3d2f;
+    margin-left: 1rem;
+}
+
+.profile-post-box {
+    background-color: #eaf8e5;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 550px;
+    color: #2e3d2f;
+}
+
+.profile-right {
+    color: #2e3d2f;
+    margin-left: 1rem;
+}
+
+.profile-comments-box {
+    background-color: #eaf8e5;
+    padding: 1rem 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 550px;
+    color: #2e3d2f;
+    display: block;
+}
+
+.profile-comments-box p {
+    display: block;
+    margin: 0 0 4px 0;
+}
+
+.loader-main {
+    background-color: #B0DB9C   ;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.loader {
+  border: 6px solid #DDF6D2;
+  border-top: 6px solid #134e15;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 0.8s linear infinite;
+  margin: 20px auto;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

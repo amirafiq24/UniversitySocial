@@ -5,13 +5,13 @@ from models.user import User
 from models.community import Community, user_community
 from models.post import Post
 from models.tag import Tag
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime
 import os
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///data.db"  # Use PostgreSQL later
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://unisocial_user:abu123@localhost/unisocial"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 app.config["JWT_SECRET_KEY"] = "super-secret"  # You should use a real secret key later            # For generating JWT tokens
@@ -163,6 +163,39 @@ def get_posts():
 
     return jsonify(post_list)
 
+@app.route("/me/posts", methods=["GET"])
+@jwt_required()
+def get_user_posts():
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user_posts = [
+        {
+            "id": post.id,
+            "title": post.title,
+            "content": post.content,
+            "created_at": post.created_at.isoformat(),
+            "votes": post.votes,
+            "community": post.community.name if post.community else None,
+            "author": post.author.username,
+            "tags": [
+                {
+                    "id": tag.id,
+                    "label": tag.label,
+                    "type": tag.type
+                }
+                for tag in post.tags
+            ] if post.tags else []
+        }
+        for post in user.posts
+    ]
+
+    return jsonify(user_posts), 200
+
+#add new community
 @app.route("/communities", methods=["POST"])
 def create_community():
     from models.community import Community
@@ -185,6 +218,7 @@ def create_community():
 
     return jsonify({"message": f"Community '{name}' created."}), 201
 
+#get a list of communities
 @app.route("/communities", methods=["GET"])
 def list_communities():
     from models.community import Community
@@ -192,13 +226,11 @@ def list_communities():
     result = [{"id": c.id, "name": c.name} for c in communities]
     return jsonify(result)
 
-from flask_jwt_extended import jwt_required, get_jwt_identity
-
+#get user's joined communities
 @app.route("/me/communities", methods=["GET"])
 @jwt_required()
 def get_joined_communities():
     user_email = get_jwt_identity()
-    print("JWT Identity (user email):", user_email)
 
     if not user_email:
         return jsonify({"message": "Invalid token"}), 401
@@ -211,11 +243,11 @@ def get_joined_communities():
     joined_ids = [c.id for c in user.joined_communities]
     return jsonify(joined_ids), 200
 
+#join a community
 @app.route("/communities/<int:community_id>/join", methods=["POST"])
 @jwt_required()
 def join_community(community_id):
     user_email = get_jwt_identity()
-    print("Decoded JWT identity:", user_email)
     user = User.query.filter_by(email=user_email).first()
     community = Community.query.get(community_id)
 
@@ -230,6 +262,7 @@ def join_community(community_id):
 
     return jsonify({"message": f"Joined {community.name}!"}), 200
 
+#leave a community
 @app.route("/communities/<int:community_id>/leave", methods=["POST"])
 @jwt_required()
 def leave_community(community_id):
@@ -248,6 +281,7 @@ def leave_community(community_id):
 
     return jsonify({"message": f"Left {community.name}."}), 200
 
+#create a new post
 @app.route("/posts", methods=["POST"])
 @jwt_required()
 def create_post():
@@ -273,16 +307,26 @@ def create_post():
     )
 
     # Add tags
+    # Add class tag (reuse if exists)
     if class_tag:
-        post.tags.append(Tag(label=class_tag, type="class"))
+        tag = Tag.query.filter_by(label=class_tag, type="class").first()
+        if not tag:
+            tag = Tag(label=class_tag, type="class")
+        post.tags.append(tag)
+
+    # Add professor tag (reuse if exists)
     if professor_tag:
-        post.tags.append(Tag(label=professor_tag, type="professor"))
+        tag = Tag.query.filter_by(label=professor_tag, type="professor").first()
+        if not tag:
+            tag = Tag(label=professor_tag, type="professor")
+        post.tags.append(tag)
 
     db.session.add(post)
     db.session.commit()
 
     return jsonify({"message": "Post created successfully", "post_id": post.id}), 201
 
+#edit a post
 @app.route("/posts/<int:post_id>", methods=["PUT"])
 @jwt_required()
 def edit_post(post_id):
@@ -301,10 +345,10 @@ def edit_post(post_id):
 
     return jsonify({"message": "Post updated"}), 200
 
+#delete a post
 @app.route("/posts/<int:post_id>", methods=["DELETE"])
 @jwt_required()
 def delete_post(post_id):
-    print("HERE")
     post = Post.query.get(post_id)
     user_email = get_jwt_identity()
     user = User.query.filter_by(email=user_email).first()
@@ -316,6 +360,7 @@ def delete_post(post_id):
     db.session.commit()
     return jsonify({"message": "Post deleted"}), 200
 
+#create comment
 @app.route("/posts/<int:post_id>/comments", methods=["POST"])
 @jwt_required()
 def create_comment(post_id):
@@ -334,6 +379,35 @@ def create_comment(post_id):
     db.session.commit()
 
     return jsonify({"message": "Comment added!"}), 201
+
+@app.route("/me/comments", methods=["GET"])
+@jwt_required()
+def get_user_comments():
+    user_email = get_jwt_identity()
+
+    if not user_email:
+        return jsonify({"message": "Invalid token"}), 401
+
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        print("No user found with email from token")
+        return jsonify({"message": "User not found"}), 404
+
+    user_comments = [
+        {
+            "id": comment.id,
+            "text": comment.text,
+            "created_at": comment.created_at,
+            "user_id": comment.user_id,
+            "post_id": comment.post_id,
+            "post_title": comment.post.title if comment.post else None,
+            "post_community": comment.post.community.name
+        }
+        for comment in user.comments
+    ]
+
+    return jsonify(user_comments), 200
+
 
 @app.route("/posts/<int:post_id>/comments", methods=["GET"])
 def get_comments(post_id):

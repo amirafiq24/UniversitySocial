@@ -45,7 +45,6 @@ function App() {
     localStorage.removeItem("username");
     setLoggedIn(false);
     setUserEmail("");
-    setUsername("");
   };
 
   if (loading) return <p>Loading...</p>;

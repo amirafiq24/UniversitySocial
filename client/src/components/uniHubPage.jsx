@@ -4,9 +4,10 @@ import PostPage from "./postPage";
 import ProfilePage from "./profilePage";
 import './uniSocialPage.css';
 
-function UniHubPage({ userEmail, username, onLogout }) {
+function UniHubPage({ userEmail, username, university, onLogout }) {
   // put your full logged-in state/logic here
   // use userEmail and username from props
+  const [universityName, setUniversityName] = useState("");
   const [profileOption, setProfileOption] = useState(false);
   const [viewProfie, setViewProfile] = useState(false);
   const [message, setMessage] = useState("");
@@ -40,7 +41,27 @@ function UniHubPage({ userEmail, username, onLogout }) {
   }, []); 
 
   useEffect(() => {
-    axios.get("http://localhost:5000/communities")
+    const token = localStorage.getItem("token");
+    axios.get("http://localhost:5000/me/university", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then((res) => {
+      setUniversityName(res.data.university_name);
+    })
+    .catch((err) => {
+      console.error("Failed to fetch university", err);
+    });
+  }, []); 
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    axios.get("http://localhost:5000/communities" , {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
         .then(res => setCommunities(res.data))
         .catch(err => console.error("Failed to load communities", err));
   }, []);
@@ -87,6 +108,7 @@ function UniHubPage({ userEmail, username, onLogout }) {
       <ProfilePage  
         userEmail={userEmail}
         username={username}
+        university={universityName}
         onBack={() => setViewProfile(false)}
       />
     );
@@ -202,13 +224,24 @@ function UniHubPage({ userEmail, username, onLogout }) {
                 return;
               }
 
-              axios.post("http://localhost:5000/communities", {
-                name: newCommunityName
-              })
+              const token = localStorage.getItem("token");
+
+              axios.post("http://localhost:5000/communities", 
+                  { name: newCommunityName },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`
+                    }
+                  }
+                )
                 .then(res => {
                   setMessage(res.data.message);
                   setNewCommunityName(""); // reset input
-                  return axios.get("http://localhost:5000/communities"); // refresh list
+                  return axios.get("http://localhost:5000/communities", {
+                    headers: {
+                      Authorization: `Bearer ${token}`
+                    }
+                  }); // refresh list
                 })
                 .then(res => setCommunities(res.data))
                 .catch(err => {

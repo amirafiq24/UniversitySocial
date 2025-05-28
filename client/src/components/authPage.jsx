@@ -4,9 +4,20 @@ import './authPage.css';
 
 
 function AuthPage({ onLogin }) {
+  const [universities, setUniversities] = useState([]);
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    axios.get("http://localhost:5000/universities")
+      .then(res => {
+        setUniversities(res.data);
+      })
+      .catch(err => {
+        console.error("Failed to fetch universities", err);
+      })
+  }, [])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,13 +36,24 @@ function AuthPage({ onLogin }) {
       return;
     }
 
+    let updatedForm = { ...form };
+
+    if (!isLogin) {
+      const selectedUni = universities.find(u => u.name === form.university);
+      if (!selectedUni && !isLogin) {
+        setMessage("Please choose a valid university from the list.");
+        return;
+      }
+      updatedForm.university = selectedUni.id;
+    }
+
     const url = isLogin ? "http://localhost:5000/login" : "http://localhost:5000/register";
 
-    axios.post(url, form)
+    axios.post(url, updatedForm)
       .then((res) => {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("username", res.data.username);
-        onLogin(res.data.token, res.data.username, form.email);
+        onLogin(res.data.token, res.data.username, form.email, form.university);
       })
       .catch((err) => {
         const errorMsg = err.response?.data?.message || "Something went wrong";
@@ -56,7 +78,18 @@ function AuthPage({ onLogin }) {
                   name="username"
                   placeholder="Username"
                   onChange={handleChange}
-                /><br /><br />
+                />
+                <br />
+                <p className="auth-uni-label">Choose your University:</p>
+                <input list="university-list" name="university" id="university" value={form.university} onChange={handleChange} />
+
+                <datalist id="university-list">
+                  {universities.map((uni) => (
+                    <option key={uni.id} value={uni.name} />
+                  ))}
+                </datalist>       
+                <br />
+                <br />
               </>
             )}
             <input

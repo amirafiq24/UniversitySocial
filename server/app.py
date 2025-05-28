@@ -5,6 +5,7 @@ from models.user import User
 from models.community import Community, user_community
 from models.post import Post
 from models.tag import Tag
+from models.university import University
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime
 import os
@@ -28,6 +29,13 @@ def hello():
 def test():
     return jsonify({"message": "This is a test route!"})
 
+@app.route("/universities", methods=["GET"])
+def get_universities():
+    universities = University.query.all()
+    return jsonify([
+        { "id": u.id, "name": u.name} for u in universities
+    ])
+
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -36,8 +44,9 @@ def register():
     username = data.get("username")
     email = data.get("email")
     password = data.get("password")
+    university = data.get("university")
 
-    if not username or not email or not password:
+    if not username or not email or not password or not university:
         return jsonify({"message": "All fields are required"}), 400
 
     if "@" not in email:
@@ -55,7 +64,7 @@ def register():
     hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
 
     # Create a new User object
-    new_user = User(username=username, email=email, password=hashed_pw)
+    new_user = User(username=username, email=email, password=hashed_pw, university_id=university)
 
     # Add the user to the database
     db.session.add(new_user)
@@ -66,7 +75,8 @@ def register():
     return jsonify({
         "message": f"User {username} registered successfully!",
         "token": access_token,
-        "username": username
+        "username": username,
+        "university": university
     }), 201
 
 
@@ -93,7 +103,7 @@ def login():
     return jsonify({
         "message": f"Welcome back, {user.username}!",
         "token": access_token,
-        "username": user.username
+        "username": user.username,
     }), 200
 
 
@@ -135,7 +145,7 @@ def seed_data():
 @app.route("/users")
 def get_users():
     users = User.query.all()
-    result = [{"id": u.id, "username": u.username, "email": u.email} for u in users]
+    result = [{"id": u.id, "username": u.username, "email": u.email, "university_id":u.university_id} for u in users]
     return jsonify(result)
 
 @app.route("/posts", methods=["GET"])
@@ -195,8 +205,28 @@ def get_user_posts():
 
     return jsonify(user_posts), 200
 
+@app.route("/me/university", methods=["GET"])
+@jwt_required()
+def get_university():
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    if not user:
+        return jsonify({ "message": "User not found" }), 404
+
+    uni = University.query.get(user.university_id)
+    if not uni:
+        return jsonify({ "message": "University not found" }), 404
+
+
+    return jsonify({ 
+        "university_id": user.university_id,
+        "university_name": uni.name
+     }), 200
+
 #add new community
 @app.route("/communities", methods=["POST"])
+@jwt_required()
 def create_community():
     from models.community import Community
 
@@ -209,10 +239,18 @@ def create_community():
     if len(name) > 50:
         return jsonify({"message": "Community name too long"}), 400
 
-    if Community.query.filter_by(name=name).first():
-        return jsonify({"message": "Community already exist"}), 400
+    # Get current user from JWT
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
 
-    new_community = Community(name=name)
+    # Check if a community with the same name exists in the same university
+    if Community.query.filter_by(name=name, university=user.university).first():
+        return jsonify({"message": "Community already exists in your university"}), 400
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    new_community = Community(name=name, university_id=user.university_id)
     db.session.add(new_community)
     db.session.commit()
 
@@ -220,10 +258,17 @@ def create_community():
 
 #get a list of communities
 @app.route("/communities", methods=["GET"])
+@jwt_required()
 def list_communities():
-    from models.community import Community
-    communities = Community.query.all()
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    communities = Community.query.filter_by(university_id=user.university_id)
     result = [{"id": c.id, "name": c.name} for c in communities]
+
     return jsonify(result)
 
 #get user's joined communities

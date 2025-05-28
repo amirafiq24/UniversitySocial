@@ -81,6 +81,12 @@
     filter: brightness(0.65);
 }
 
+.auth-uni-label {
+    margin-top: 10px;
+    margin-bottom: 2px;
+    color: #134e15;
+}
+
 input[type="text"],
 input[type="email"],
 input[type="password"] {

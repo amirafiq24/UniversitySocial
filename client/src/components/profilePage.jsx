@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import './profilePage.css';
 
-function ProfilePage ({userEmail, username, onBack}) {
+function ProfilePage ({userEmail, username, university, onBack}) {
 
     const [loadingCount, setLoadingCount] = useState(2);
     const [userPosts, setUserPosts] = useState([]);
@@ -70,6 +70,7 @@ function ProfilePage ({userEmail, username, onBack}) {
                 <div className="profile-body-info">
                     <p><strong>Username:</strong> {username}</p>
                     <p><strong>Email:</strong> {userEmail}</p>
+                    <p><strong>University:</strong> {university}</p>
                 </div>
                 <div className="profile-middle">
                     <div className="profile-left">
@@ -80,7 +81,7 @@ function ProfilePage ({userEmail, username, onBack}) {
                             </div>
                         )}
                         {recentPosts.map((post) => (
-                            <div className="profile-post-box">
+                            <div className="profile-post-box" key={post.id}>
                                 <strong>{post.title} in {post.community}</strong> <br />
                                 <em>by {post.author}</em>
                                 <p>{post.content}</p>
@@ -115,6 +116,11 @@ function ProfilePage ({userEmail, username, onBack}) {
                     </div>
                     <div className="profile-right">
                         <h2>Your Comments</h2>
+                        {userComments.length === 0 && (
+                            <div className="profile-comments-box">
+                                <p>No comments</p>
+                            </div>
+                        )}
                         {recentComments.map((comment) => (
                             <div className="profile-comments-box">
                                 <p>You commented "{comment.text}"</p>

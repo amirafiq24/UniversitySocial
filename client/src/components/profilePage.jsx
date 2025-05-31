@@ -1,14 +1,18 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import './profilePage.css';
+import PostPage from "./postPage";
 
 function ProfilePage ({userEmail, username, university, onBack}) {
 
     const [loadingCount, setLoadingCount] = useState(2);
     const [userPosts, setUserPosts] = useState([]);
     const sortedPosts = [...userPosts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const [selectedPost, setSelectedPost] = useState(null);
     const [userComments, setUserComments] = useState([]);
     const sortedComments = [...userComments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const [userCommunities, setUserCommunities] = useState([]);
 
     const recentPosts = sortedPosts.slice(0, 5);
     const recentComments = sortedComments.slice(0, 5);
@@ -51,12 +55,33 @@ function ProfilePage ({userEmail, username, university, onBack}) {
         .finally(() => setLoadingCount(c => c - 1));
     }, []);
 
+    useEffect (() => {
+        const token = localStorage.getItem("token");
+        axios.get("http://localhost:5000/me/communities", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+            .then(res => setUserCommunities(res.data))
+            .catch(err => console.error("Failed to fetch joined communities"));
+    }, []);
+
     if (loadingCount > 0) {
         return (
             <div className="loader-main">
               <div className="loader"></div>  
             </div>     
         ) 
+    }
+
+    if (selectedPost) {
+        return (
+            <PostPage
+                post={selectedPost}
+                username={username}
+                onBack = {() => setSelectedPost(null)}               
+            />
+        )
     }
 
     return (
@@ -71,6 +96,10 @@ function ProfilePage ({userEmail, username, university, onBack}) {
                     <p><strong>Username:</strong> {username}</p>
                     <p><strong>Email:</strong> {userEmail}</p>
                     <p><strong>University:</strong> {university}</p>
+                    <p>Joined Communities</p>
+                    {userCommunities.map((comm) => (
+                        <p>{comm.name}</p>
+                    ))}
                 </div>
                 <div className="profile-middle">
                     <div className="profile-left">
@@ -125,6 +154,14 @@ function ProfilePage ({userEmail, username, university, onBack}) {
                             <div className="profile-comments-box">
                                 <p>You commented "{comment.text}"</p>
                                 <p>on <strong>{comment.post_title}</strong> in <strong>{comment.post_community}</strong></p>
+                                <button onClick={() => {
+                                    axios.get('http://localhost:5000/posts')
+                                    .then(res => {
+                                        const post = res.data.find(p => p.id === comment.post_id);
+                                        setSelectedPost(post);
+                                    })
+                                    .catch(err => console.error("Failed to fetch post", err));
+                                }}>View Post</button>
                             </div>
                         ))
                         }

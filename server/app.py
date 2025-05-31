@@ -285,7 +285,7 @@ def get_joined_communities():
         print("No user found with email from token")
         return jsonify({"message": "User not found"}), 404
 
-    joined_ids = [c.id for c in user.joined_communities]
+    joined_ids = [{"id": c.id, "name":c.name} for c in user.joined_communities]
     return jsonify(joined_ids), 200
 
 #join a community

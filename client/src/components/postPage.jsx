@@ -2,7 +2,7 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import './postPage.css';
 
-function PostPage({ post, setCommunityPosts, username, selectedCommunity, onBack }) {
+function PostPage({ post, username, onBack }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [editingPostId, setEditingPostId] = useState(null);
@@ -59,12 +59,6 @@ function PostPage({ post, setCommunityPosts, username, selectedCommunity, onBack
                 })
                   .then(res => {
                     setMessage(res.data.message);
-                    axios.get("http://localhost:5000/posts")
-                    .then(r => {
-                        const filtered = r.data.filter(p => p.community === selectedCommunity.name);
-                        setCommunityPosts(filtered);
-                        onBack();
-                    });
                   })
                   .catch(err => setMessage("Failed to delete post"));
               }}
@@ -90,13 +84,6 @@ function PostPage({ post, setCommunityPosts, username, selectedCommunity, onBack
                       setMessage(res.data.message);
                       setEditingPostId(null);
                       // Reload posts
-                      axios.get("http://localhost:5000/posts")
-                        .then(r => {
-                          const filtered = r.data.filter(
-                            p => p.community === selectedCommunity.name
-                          );
-                          setCommunityPosts(filtered);
-                        });
                     })
                     .catch(err => setMessage("Failed to update post"));
                 }}

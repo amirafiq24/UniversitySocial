@@ -1,3 +1,16 @@
+.page-main {
+    background-color: #B0DB9C;
+    color: rgb(54, 123, 140);
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;                /* full screen height */
+    width: 100vw;                 /* enable flexbox */
+    align-items: center;             /* center vertically */
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 /*top bar*/
 
 .profile-container {
@@ -7,6 +20,7 @@
     padding: 12px 24px;
     background-color: #0f3e18;
     animation: fadeIn 0.8s ease-in-out;
+    width: 100vw;
 }
 
 .profile-btn {
@@ -75,53 +89,62 @@
   align-items: center;
 }
 
-.body {
-    background-color: #B0DB9C;
-    color: rgb(54, 123, 140);
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    min-height: 100vh;                /* full screen height */
-    width: 100vw;
-    display: flex;                    /* enable flexbox */
-    align-items: center;             /* center vertically */
-    display: flex;
-    overflow-x: hidden;
-}
-
-/*Page box*/
-
-.page-box { 
-    background-color: #DDF6D2;
-    background: linear-gradient(to bottom, #ddf6d2, #b0db9c);
-    padding: 2rem;
-    color: #2e3d2f;
-    width: 100%;
-    max-width:550px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    flex: 1;
-    animation: fadeIn 0.8s ease-in-out;
-    border-radius: 20px;
-    margin: 10px;
-}
-
 .logo {
     width: 120px;  
     height: auto;
     margin-left: 10px;
 }
 
-.logo-section {
+/*Page body*/
+
+.page-body {
+    display: flex;
+}
+
+/*Page your comm /left */
+
+.page-your-comm {
     background-color: #DDF6D2;
     background: linear-gradient(to bottom, #ddf6d2, #b0db9c);
+    color: #2e3d2f;
+    margin-top: 20px;
+    width: 300px;
     border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 10px;
-    max-width: 500px; /* optional */
-    margin-left: 50px;
-    margin-top: 10px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    padding-left: 20px;
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+.page-your-comm-btn {
+    display: block;
+    max-width: 250px;
+    width: auto;
+}
+
+/*Page box /right */
+
+.page-box { 
+    background-color: #DDF6D2;
+    background: linear-gradient(to bottom, #ddf6d2, #b0db9c);
+    padding: 2rem;
+    color: #2e3d2f;
+    width: 1100px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    flex: 1;
+    animation: fadeIn 0.8s ease-in-out;
+    border-radius: 20px;
+    margin: 20px;
+}
+
+.page-greet {
+    background-color:#0f3e18;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #bcddbc;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .page-box h1 { 
@@ -147,77 +170,22 @@
     margin-bottom: 5px; 
 }
 
-/*Page Community*/
-
-.page-community { 
-    background-color: #DDF6D2;
-    background: linear-gradient(to bottom, #ddf6d2, #b0db9c);
-    padding: 2rem;
+.page-comm-card {
+    margin-left: 10px;
     color: #2e3d2f;
-    width: 90%;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    flex: 1;
-    animation: fadeIn 0.8s ease-in-out;
-    border-radius: 20px;
-    margin: 10px;
-    max-width: 800px;
+    width: 1000px;
 }
 
-.page-community h2 {
-  margin-left: 1rem;
-}
-
-.community-header {
+.page-comm-card-title {
     display: flex;
-    flex: 1;
-    align-items: center;
-    background-color: #beeea9;
-    border-radius: 20px;
-    height: auto;
-    align-items: center;    
-    justify-content: space-between;
 }
 
-.community-header h1 {
-    margin-left: 30px;
+.page-comm-card input {
+    width: 800px;
 }
 
-.community-header button {
-    width: 140px;
-    height: 50px;
-    align-items: center;
-    font-size: small;
-    padding: 2px;
-    align-items: center;
-    justify-content: center;
-    margin-left: 20px;
-    margin-right: 20px;
-    white-space: nowrap;
-    margin-right: 30px;
-}
-
-.post-create-cancel-btn {
-    margin-top: 20px;
-}
-
-.view-btn {
-    background-color: #2e6d37;
-    color: #ffffff;
-    border: none;
-    padding: 1  ;
-    margin: 0.5rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-
-.post-card {
-    background-color: #eaf8e5;
-    padding: 1rem 1.5rem;
-    border-radius: 16px;
-    margin-bottom: 1.5rem;
-    margin-left: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    max-width: 550px;
+.page-comm-card button {
+    margin: 5px;
 }
 
 /*Global*/

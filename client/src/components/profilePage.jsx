@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import './profilePage.css';
 import PostPage from "./postPage";
+import CommunityPage from "./communityPage";
 
 function ProfilePage ({userEmail, username, university, onBack}) {
 
@@ -13,6 +14,7 @@ function ProfilePage ({userEmail, username, university, onBack}) {
     const sortedComments = [...userComments].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     const [userCommunities, setUserCommunities] = useState([]);
+    const [selectedCommunity, setSelectedCommunity] = useState(null);
 
     const recentPosts = sortedPosts.slice(0, 5);
     const recentComments = sortedComments.slice(0, 5);
@@ -84,6 +86,18 @@ function ProfilePage ({userEmail, username, university, onBack}) {
         )
     }
 
+    if (selectedCommunity) {
+        return (
+            <CommunityPage
+                username={username}
+                community={selectedCommunity}
+                joinedCommunities={userCommunities}
+                setJoinedCommunities={setUserCommunities}
+                onBack = {() => setSelectedCommunity(null)}
+            />
+        )
+    }
+
     return (
         <div className="profile-main">
             <div className="profile-body">
@@ -96,10 +110,12 @@ function ProfilePage ({userEmail, username, university, onBack}) {
                     <p><strong>Username:</strong> {username}</p>
                     <p><strong>Email:</strong> {userEmail}</p>
                     <p><strong>University:</strong> {university}</p>
-                    <p>Joined Communities</p>
+                    <p style={{marginTop: '10px', marginLeft: '10px'}}><strong>Joined Communities</strong></p>
+                    <div className="profile-user-comm">
                     {userCommunities.map((comm) => (
-                        <p>{comm.name}</p>
+                        <button onClick={() => setSelectedCommunity(comm)}>{comm.name}</button>                       
                     ))}
+                    </div>
                 </div>
                 <div className="profile-middle">
                     <div className="profile-left">

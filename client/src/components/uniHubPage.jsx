@@ -30,6 +30,8 @@ function UniHubPage({ userEmail, username, university, onLogout }) {
     class_tag: "",
     professor_tag: ""
   });
+  
+  const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
@@ -80,16 +82,21 @@ function UniHubPage({ userEmail, username, university, onLogout }) {
   }, []);
 
   useEffect(() => {
-    if (selectedCommunity) {
-      axios.get("http://localhost:5000/posts")
-        .then(res => {
-          const filtered = res.data.filter(
-            post => post.community === selectedCommunity.name
-          );
-          setCommunityPosts(filtered);
-        });
-    }
-  }, [selectedCommunity]);
+    console.log(joinedCommunities);
+    if (joinedCommunities.length === 0) return;
+
+    axios.get("http://localhost:5000/posts")
+      .then(res => {
+        const joinedNames = joinedCommunities.map(c => c.name); 
+
+        const filtered = res.data
+          .filter(post => joinedNames.includes(post.community))
+          .reverse();
+        
+        setCommunityPosts(filtered);
+        setLoading(false);
+      });
+  }, [joinedCommunities]); 
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -100,7 +107,7 @@ function UniHubPage({ userEmail, username, university, onLogout }) {
   })
     .then(res => setJoinedCommunities(res.data))
     .catch(err => console.error("Failed to fetch joined communities", err));
-  }, []);
+  }, [selectedCommunity]);
 
   const profileToggle = () => {
     setProfileOption(prev => !prev);
@@ -115,6 +122,14 @@ function UniHubPage({ userEmail, username, university, onLogout }) {
   const suggestedCommunities = communities
     .filter(c => !joinedCommunities.some(j => j.id === c.id)) // remove joined ones
     .slice(0, 5); // take first 5 only
+
+  if (loading) {
+    return (
+      <div className="loader-main">
+        <div className="loader"></div>  
+      </div>    
+    )
+  }
 
   if (viewProfie) {
     return (
@@ -143,6 +158,7 @@ function UniHubPage({ userEmail, username, university, onLogout }) {
         username={username}
         community={selectedCommunity}
         joinedCommunities={joinedCommunities}
+        setJoinedCommunities={setJoinedCommunities}
         onBack={() => setSelectedCommunity(null)}
       />
     )
@@ -312,6 +328,43 @@ function UniHubPage({ userEmail, username, university, onLogout }) {
             
           </div>
           <p>{message}</p>
+          <div className="page-post">
+            {communityPosts.map((post) => (
+            <div key={post.id} style={{ marginBottom: "1rem" }}>
+            <div className="comm-post-card">
+              <h2 style={{margin: "0px"}}>{post.community} Community</h2>
+                <strong>{post.title}</strong> <br />
+                <em>by {post.author}</em>
+                <p style={{ whiteSpace: "pre-line" }}>{post.content}</p>
+
+                <div style={{ fontSize: "0.9rem", color: "#555" }}>
+                <span>{post.created_at}</span>
+            </div>
+            <button 
+            className="view-btn"
+            onClick={() => {
+                setSelectedPost(post);
+            }}>
+            View Post
+            </button>
+
+                <div style={{ marginTop: "0.5rem" }}>
+                {post.tags?.map((tag, i) => (
+                <span key={i} style={{
+                    padding: "0.2rem 0.5rem",
+                    backgroundColor: tag.type === "class" ? "#d5f7d4" : "#b6eac5",
+                    borderRadius: "6px",
+                    marginRight: "0.5rem",
+                    fontSize: "0.8rem"
+                    }}>
+                    {tag.label}
+                    </span>
+                ))}
+                </div>
+              </div>
+            </div>
+          ))}
+          </div>
         </div>
       </div>
     </div>

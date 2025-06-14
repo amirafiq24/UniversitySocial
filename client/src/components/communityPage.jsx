@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import './communityPage.css';
 
-function CommunityPage({username, community, joinedCommunities, onBack}) {
+function CommunityPage({username, community, joinedCommunities, setJoinedCommunities, onBack}) {
+    const [loading, setLoading] = useState(true);
+
     const [message, setMessage] = useState("");
     const [selectedCommunity, setSelectedCommunity] = useState(null);
 
@@ -19,12 +21,21 @@ function CommunityPage({username, community, joinedCommunities, onBack}) {
     useEffect(() => {
         axios.get("http://localhost:5000/posts")
         .then(res => {
-            const filtered = res.data.filter(
-                post => post.community === community.name
-            );
+            const filtered = res.data
+                .filter(post => post.community === community.name)
+                .reverse();
             setCommunityPosts(filtered);
+            setLoading(false);
         });
     }, []);
+
+    if (loading) {
+        return (
+            <div className="loader-main">
+                <div className="loader"></div>  
+            </div>     
+        )
+    }
 
     return (
         <div className="comm-main">
@@ -44,8 +55,8 @@ function CommunityPage({username, community, joinedCommunities, onBack}) {
                             .then(res => {
                             setMessage(res.data.message);
                             setJoinedCommunities(prev =>
-                                prev.filter(id => id !== community.id)
-                            );
+                                prev.filter(c => c.id !== community.id)
+                                );
                             })
                             .catch(err => setMessage("Failed to leave community"));
                         }}
@@ -64,7 +75,7 @@ function CommunityPage({username, community, joinedCommunities, onBack}) {
                         )
                             .then(res => {
                             setMessage(res.data.message);
-                            setJoinedCommunities(prev => [...prev, community.id]);
+                            setJoinedCommunities(prev => [...prev, { id: community.id, name: community.name }]);
                             })
                             .catch(err => setMessage("Failed to join"));
                         }}
@@ -77,6 +88,9 @@ function CommunityPage({username, community, joinedCommunities, onBack}) {
                 </div>
                 <div className="comm-middle">
                     <div className="comm-middle-content">
+                        {message && (
+                            <p>{message}</p>
+                        )}
                         {joinedCommunities.some(j => j.id === community.id) && (
                         <div>
                             <button 
@@ -89,35 +103,36 @@ function CommunityPage({username, community, joinedCommunities, onBack}) {
                                 <h3>Create Post in {community.name}</h3>
 
                                 <form onSubmit={(e) => {
-                                e.preventDefault();
-                                const token = localStorage.getItem("token");
+                                    e.preventDefault();
+                                    const token = localStorage.getItem("token");
 
-                                axios.post("http://localhost:5000/posts", {
-                                ...newPost,
-                                community_id: community.id
-                                }, {
-                                headers: {
-                                    Authorization: `Bearer ${token}`,
-                                    "Content-Type": "application/json"
-                                }
-                                })
-                                .then(res => {
-                                    setMessage(res.data.message);
-                                    setNewPost({ title: "", content: "", class_tag: "", professor_tag: "" });
+                                    axios.post("http://localhost:5000/posts", {
+                                    ...newPost,
+                                    community_id: community.id
+                                    }, {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                        "Content-Type": "application/json"
+                                    }
+                                    })
+                                    .then(res => {
+                                        setMessage(res.data.message);
+                                        setNewPost({ title: "", content: "", class_tag: "", professor_tag: "" });
 
-                                    axios.get("http://localhost:5000/posts")
-                                    .then(r => {
-                                        const filtered = r.data.filter(
-                                        post => post.community === community.name
-                                        );
-                                        setCommunityPosts(filtered);
+                                        axios.get("http://localhost:5000/posts")
+                                        .then(r => {
+                                            const filtered = r.data
+                                                .filter(post => post.community === community.name)
+                                                .reverse();
+                                            setCommunityPosts(filtered);
+                                            setCreatePost(prev => !prev)
+                                        });
+                                    })
+                                    .catch(err => {
+                                        const msg = err.response?.data?.message || "Failed to create post";
+                                        setMessage(msg);
                                     });
-                                })
-                                .catch(err => {
-                                    const msg = err.response?.data?.message || "Failed to create post";
-                                    setMessage(msg);
-                                });
-                            }}>
+                                }}>
                                 <input
                                 type="text"
                                 placeholder="Post title"
@@ -161,7 +176,7 @@ function CommunityPage({username, community, joinedCommunities, onBack}) {
                             <div className="comm-post-card">
                                 <strong>{post.title}</strong> <br />
                                 <em>by {post.author}</em>
-                                <p>{post.content}</p>
+                                <p style={{ whiteSpace: "pre-line" }}>{post.content}</p>
 
                                 <div style={{ fontSize: "0.9rem", color: "#555" }}>
                                 <span>{post.created_at}</span>
